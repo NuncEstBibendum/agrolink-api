@@ -4,9 +4,9 @@ import { ConversationsService } from './conversations.service';
 import { PrismaService } from 'src/prisma.service';
 
 @Module({
+  imports: [],
   controllers: [ConversationsController],
   providers: [ConversationsService, PrismaService],
   exports: [ConversationsService],
-  imports: [],
 })
 export class ConversationsModule {}

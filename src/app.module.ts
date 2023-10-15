@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { PrismaService } from './prisma.service';
 import { ConversationsModule } from './conversations/conversations.module';
+import { MessageModule } from './message/message.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ConversationsModule } from './conversations/conversations.module';
     UsersModule,
     JwtModule,
     ConversationsModule,
+    MessageModule,
   ],
   controllers: [AppController],
   providers: [
