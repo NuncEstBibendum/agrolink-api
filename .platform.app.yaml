@@ -1,0 +1,19 @@
+name: node-app
+
+build:
+  flavor: none
+
+type: nodejs:16
+
+dependencies:
+  nodejs:
+    yarn: '*'
+
+hooks:
+  build: |
+    yarn install
+    yarn build
+
+web:
+  commands:
+    start: 'node dist/main'
