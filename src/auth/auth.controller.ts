@@ -45,14 +45,17 @@ export class AuthController {
   }
 
   @Put('update/password')
+  @UseGuards(JwtAuthGuard)
   async updateUserPassword(
     @UserDecorator() user: UserEntity,
     @Body() payload: UpdatePasswordDto,
   ) {
+    console.log('payload', payload);
     const res = await this.authService.updatePassword(
       user.userId,
       payload.oldPassword,
       payload.newPassword,
+      payload.confirmNewPassword,
     );
     return this.authService.login(user.userId, res.email, res.profession);
   }

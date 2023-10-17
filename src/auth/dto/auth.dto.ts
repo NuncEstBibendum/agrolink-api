@@ -22,6 +22,11 @@ export class UpdatePasswordDto {
   @IsNotEmpty()
   @Matches(PASSWORD_REGEX)
   newPassword: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @Matches(PASSWORD_REGEX)
+  confirmNewPassword: string;
 }
 
 export class EmailRedirectDto {

@@ -62,7 +62,12 @@ export class AuthService {
     userID: string,
     oldPassword: string,
     newPassword: string,
+    confirmNewPassword: string,
   ) {
+    if (newPassword !== confirmNewPassword) {
+      throw new ConflictException(`Passwords don't match`);
+    }
+
     const user = await this.prismaService.user.findUniqueOrThrow({
       where: { id: userID },
       select: { password: true },
