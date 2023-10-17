@@ -202,6 +202,7 @@ export class ConversationsService {
             id: true,
             text: true,
             createdAt: true,
+            hasAnswer: true,
             user: {
               select: {
                 id: true,

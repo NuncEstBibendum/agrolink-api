@@ -21,15 +21,11 @@ import {
   UserEmailFreeQueryDto,
 } from './dto/auth.dto';
 import { CreateUserDto, UpdateUserEmailDto } from '../users/dto/users.dto';
-import { PrismaService } from 'src/prisma.service';
 import { JwtAuthGuard } from 'src/core/guards/jwtAuth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly prismaService: PrismaService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('register')
   @Public()
@@ -50,7 +46,6 @@ export class AuthController {
     @UserDecorator() user: UserEntity,
     @Body() payload: UpdatePasswordDto,
   ) {
-    console.log('payload', payload);
     const res = await this.authService.updatePassword(
       user.userId,
       payload.oldPassword,
