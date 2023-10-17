@@ -1,11 +1,12 @@
 import {
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { TagEnum } from '@prisma/client';
 import { UserEntity } from 'src/core/decorators/user.decorator';
-import { PrismaService } from 'src/prisma.service';
+import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class MessageService {
@@ -15,7 +16,7 @@ export class MessageService {
     user: UserEntity,
     title: string,
     message: string,
-    tags: TagEnum[],
+    tags: string[],
   ) {
     const foundUser = await this.prismaService.user.findUnique({
       where: {
@@ -32,72 +33,86 @@ export class MessageService {
     const foundTags = await this.prismaService.tag.findMany({
       where: {
         name: {
-          in: tags,
+          in: tags as TagEnum[],
         },
       },
     });
 
-    const createdConversation = await this.prismaService.conversation.create({
-      data: {
-        title: title,
-        authorId: user.userId,
-        users: {
-          connect: [
-            {
+    if (!foundTags)
+      throw new InternalServerErrorException(
+        'Conversation could not be created due to an internal server error',
+      );
+
+    try {
+      const createdConversation = await this.prismaService.conversation.create({
+        data: {
+          title: title,
+          authorId: user.userId,
+          users: {
+            connect: [
+              {
+                id: user.userId,
+              },
+            ],
+          },
+          tags: {
+            connect: foundTags.map((tag) => ({
+              id: tag.id,
+            })),
+          },
+        },
+      });
+
+      if (!createdConversation)
+        throw new NotFoundException('Conversation could not be created');
+
+      await this.prismaService.message.create({
+        data: {
+          text: message,
+          user: {
+            connect: {
               id: user.userId,
             },
-          ],
+          },
+          conversation: {
+            connect: {
+              id: createdConversation.id,
+            },
+          },
         },
-        tags: {
-          connect: foundTags.map((tag) => ({
-            id: tag.id,
-          })),
-        },
-      },
-    });
+      });
 
-    await this.prismaService.message.create({
-      data: {
-        text: message,
-        user: {
-          connect: {
-            id: user.userId,
-          },
+      return this.prismaService.conversation.findUnique({
+        where: {
+          id: createdConversation.id,
         },
-        conversation: {
-          connect: {
-            id: createdConversation.id,
+        select: {
+          id: true,
+          users: {
+            select: {
+              id: true,
+            },
           },
-        },
-      },
-    });
-
-    return this.prismaService.conversation.findUnique({
-      where: {
-        id: createdConversation.id,
-      },
-      select: {
-        id: true,
-        users: {
-          select: {
-            id: true,
-          },
-        },
-        messages: {
-          select: {
-            id: true,
-            text: true,
-            createdAt: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
+          messages: {
+            select: {
+              id: true,
+              text: true,
+              createdAt: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      });
+    } catch (e) {
+      throw new InternalServerErrorException(
+        'Conversation could not be created due to an internal server error',
+      );
+    }
   }
 
   async sendMessage(user: UserEntity, message: string, conversationId: string) {
