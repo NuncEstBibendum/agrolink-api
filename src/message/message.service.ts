@@ -36,6 +36,7 @@ export class MessageService {
     const createdConversation = await this.prismaService.conversation.create({
       data: {
         title: title,
+        authorId: user.userId,
         users: {
           connect: [
             {
@@ -89,6 +90,79 @@ export class MessageService {
                 name: true,
               },
             },
+          },
+        },
+      },
+    });
+  }
+
+  async sendMessage(user: UserEntity, message: string, conversationId: string) {
+    const foundUser = await this.prismaService.user.findUnique({
+      where: {
+        id: user.userId,
+      },
+      select: {
+        id: true,
+        profession: true,
+      },
+    });
+
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    const foundConversation = await this.prismaService.conversation.findUnique({
+      where: {
+        id: conversationId,
+      },
+      select: {
+        id: true,
+        users: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+
+    if (!foundConversation)
+      throw new NotFoundException('Conversation not found');
+
+    if (foundUser.profession === 'farmer') {
+      const isUserInConversation = foundConversation.users.some(
+        (user) => user.id === foundUser.id,
+      );
+
+      if (!isUserInConversation)
+        throw new NotFoundException('User not in conversation');
+    }
+
+    const createdMessage = await this.prismaService.message.create({
+      data: {
+        text: message,
+        user: {
+          connect: {
+            id: user.userId,
+          },
+        },
+        conversation: {
+          connect: {
+            id: conversationId,
+          },
+        },
+      },
+    });
+
+    return this.prismaService.message.findUnique({
+      where: {
+        id: createdMessage.id,
+      },
+      select: {
+        id: true,
+        text: true,
+        createdAt: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
           },
         },
       },

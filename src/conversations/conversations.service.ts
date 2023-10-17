@@ -22,6 +22,11 @@ export class ConversationsService {
       select: {
         id: true,
         title: true,
+        tags: {
+          select: {
+            name: true,
+          },
+        },
         messages: {
           select: {
             id: true,
@@ -60,22 +65,71 @@ export class ConversationsService {
     if (foundUser.profession !== 'agronomist')
       throw new UnauthorizedException('User is not an agronomist');
 
-    return this.prismaService.conversation.findMany({
+    const conversationsWithoutAuthors =
+      await this.prismaService.conversation.findMany({
+        where: {
+          messages: {
+            some: {
+              hasAnswer: false,
+            },
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          authorId: true,
+          tags: true,
+          messages: {
+            select: {
+              id: true,
+              text: true,
+              createdAt: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          users: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+    const conversationsWithAuthor = await Promise.all(
+      conversationsWithoutAuthors.map(async (conversation) => {
+        const author = await this.prismaService.user.findUnique({
+          where: {
+            id: conversation.authorId,
+          },
+          select: {
+            name: true,
+          },
+        });
+        return {
+          ...conversation,
+          author,
+        };
+      }),
+    );
+
+    return conversationsWithAuthor;
+  }
+
+  async getConversationById(user: UserEntity, id: string) {
+    const foundConversation = await this.prismaService.conversation.findUnique({
       where: {
-        users: {
-          some: {
-            id: user.userId,
-          },
-        },
-        messages: {
-          some: {
-            hasAnswer: false,
-          },
-        },
+        id: id,
       },
       select: {
         id: true,
         title: true,
+        tags: true,
         messages: {
           select: {
             id: true,
@@ -88,14 +142,42 @@ export class ConversationsService {
               },
             },
           },
+          orderBy: {
+            createdAt: 'asc',
+          },
         },
         users: {
           select: {
             id: true,
             name: true,
+            profession: true,
           },
         },
       },
     });
+
+    if (!foundConversation)
+      throw new NotFoundException('Conversation not found');
+
+    const foundUser = await this.prismaService.user.findUnique({
+      where: {
+        id: user.userId,
+      },
+      select: {
+        profession: true,
+      },
+    });
+
+    if (foundUser.profession === 'farmer') {
+      const isUserInConversation = foundConversation.users.some(
+        (userInConversation) => userInConversation.id === user.userId,
+      );
+
+      if (!isUserInConversation)
+        throw new UnauthorizedException('User is not in conversation');
+    }
+
+    console.log('fourndConversation', foundConversation);
+    return foundConversation;
   }
 }

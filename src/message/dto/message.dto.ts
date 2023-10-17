@@ -14,3 +14,13 @@ export class SendFirstMessageDto {
   @IsNotEmpty()
   tags: TagEnum[];
 }
+
+export class SendMessageDto {
+  @IsString()
+  @IsNotEmpty()
+  message: string;
+
+  @IsString()
+  @IsNotEmpty()
+  conversationId: string;
+}

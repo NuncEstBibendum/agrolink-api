@@ -23,14 +23,15 @@ model User {
 
 model Conversation {
   id                        String            @id @default(uuid())
-  title                      String
+  title                     String
   tags                      Tag[]             @relation("ConversationToTag")
+  authorId                  String
 
   createdAt                 DateTime          @default(now())
   updatedAt                 DateTime          @updatedAt @default(now())
 
   users                     User[]            @relation("UserToConversation")
-  messages                  Message[]
+  messages                  Message[]         
 }
 
 model Message {
@@ -42,9 +43,9 @@ model Message {
   createdAt                 DateTime          @default(now())
   updatedAt                 DateTime          @updatedAt @default(now())
 
-  user                      User              @relation(fields: [userId], references: [id])
+  user                      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId                    String
-  conversation              Conversation      @relation(fields: [conversationId], references: [id])
+  conversation              Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   conversationId            String
 }
 
