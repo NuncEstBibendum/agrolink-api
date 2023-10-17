@@ -203,10 +203,12 @@ export class ConversationsService {
             text: true,
             createdAt: true,
             hasAnswer: true,
+            isLiked: true,
             user: {
               select: {
                 id: true,
                 name: true,
+                profession: true,
               },
             },
           },

@@ -24,3 +24,11 @@ export class SendMessageDto {
   @IsNotEmpty()
   conversationId: string;
 }
+
+export class SendReactionToMessageDto {
+  @IsString()
+  @IsNotEmpty()
+  messageId: string;
+
+  reaction: boolean | null;
+}

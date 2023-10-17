@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { TagEnum } from '@prisma/client';
 import { UserEntity } from 'src/core/decorators/user.decorator';
 import { PrismaService } from 'src/prisma.service';
@@ -176,6 +180,55 @@ export class MessageService {
             name: true,
           },
         },
+      },
+    });
+  }
+
+  async sendReactionToMessage(
+    userId: string,
+    messageId: string,
+    reaction: boolean | null,
+  ) {
+    const foundUser = await this.prismaService.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        id: true,
+        profession: true,
+      },
+    });
+
+    if (!foundUser) throw new NotFoundException('User not found');
+    if (foundUser.profession !== 'farmer')
+      throw new UnauthorizedException('User is not a farmer');
+
+    const foundMessage = await this.prismaService.message.findUnique({
+      where: {
+        id: messageId,
+      },
+      select: {
+        id: true,
+        isLiked: true,
+        user: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+
+    if (!foundMessage) throw new NotFoundException('Message not found');
+
+    if (foundMessage.isLiked === reaction)
+      throw new NotFoundException('Reaction already set');
+
+    return this.prismaService.message.update({
+      where: {
+        id: messageId,
+      },
+      data: {
+        isLiked: reaction,
       },
     });
   }

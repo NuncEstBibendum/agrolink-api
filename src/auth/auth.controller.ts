@@ -16,7 +16,6 @@ import { AuthService } from './auth.service';
 import {
   ForgottenPasswordDto,
   LoginDto,
-  UpdatePasswordByLinkDto,
   UpdatePasswordDto,
   UserEmailFreeQueryDto,
 } from './dto/auth.dto';
@@ -76,17 +75,6 @@ export class AuthController {
   async promptPasswordRecovery(@Body() payload: ForgottenPasswordDto) {
     await this.authService.sendPasswordRecovery({
       userEmail: payload.email,
-      redirectURL: payload.redirectURL,
-    });
-  }
-
-  @Public()
-  @Put('forgotten-password/update')
-  async updatePasswordByLink(@Body() payload: UpdatePasswordByLinkDto) {
-    await this.authService.updateMyPasswordByLink({
-      userID: payload.id,
-      newPassword: payload.password,
-      token: payload.token,
     });
   }
 }

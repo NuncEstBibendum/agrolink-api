@@ -11,24 +11,8 @@ export type MailTemplateVars<T extends keyof typeof MailTemplates> =
   ObjectFromList<(typeof MailTemplates)[T]['vars']>;
 
 export const MailTemplates = {
-  'Send email validation code on register': {
+  'Send temporary password': {
     templateID: 1,
-    vars: ['url'] as const,
-  },
-  'Send password recovery link': {
-    templateID: 2,
-    vars: ['url'] as const,
-  },
-  'Send deletion confirmation': {
-    templateID: 3,
-    vars: ['daysBeforeDeletion'] as const,
-  },
-  'Send deletion cancellation': {
-    templateID: 4,
-    vars: [] as const,
-  },
-  'Send account deleted notification': {
-    templateID: 5,
-    vars: ['daysBeforeDeletion'] as const,
+    vars: ['temporaryPassword'] as const,
   },
 };

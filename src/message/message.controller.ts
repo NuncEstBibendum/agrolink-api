@@ -5,7 +5,11 @@ import {
   User as UserDecorator,
   UserEntity,
 } from '../core/decorators/user.decorator';
-import { SendFirstMessageDto, SendMessageDto } from './dto/message.dto';
+import {
+  SendFirstMessageDto,
+  SendMessageDto,
+  SendReactionToMessageDto,
+} from './dto/message.dto';
 
 @Controller('message')
 export class MessageController {
@@ -35,6 +39,19 @@ export class MessageController {
       user,
       payload.message,
       payload.conversationId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('reaction')
+  async sendReactionToMessage(
+    @UserDecorator() user: UserEntity,
+    @Body() payload: SendReactionToMessageDto,
+  ) {
+    return this.messageService.sendReactionToMessage(
+      user.userId,
+      payload.messageId,
+      payload.reaction,
     );
   }
 }

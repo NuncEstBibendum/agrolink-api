@@ -9,13 +9,14 @@ datasource db {
 
 model User {
   id                        String            @id @default(uuid())
-  passwordRecoveryToken     String?
   email                     String            @unique
   password                  String
   name                      String
   profession                String
   conversations             Conversation[]    @relation("UserToConversation")
-  messages                  Message[]         
+  messages                  Message[]   
+  temporaryPassword         String?
+  temporaryPasswordExpiry   DateTime?      
 
   createdAt                 DateTime          @default(now())
   updatedAt                 DateTime          @updatedAt @default(now())

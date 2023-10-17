@@ -36,6 +36,24 @@ export class AuthService {
     });
     if (user && (await bcrypt.compare(password, user.password))) {
       return this.login(user.id, user.email, user.profession);
+    } else if (
+      user &&
+      (await bcrypt.compare(password, user.temporaryPassword)) &&
+      user.temporaryPasswordExpiry > new Date(Date.now())
+    ) {
+      const res = await this.login(user.id, user.email, user.profession);
+      await this.prismaService.user.update({
+        where: { id: user.id },
+        data: {
+          password: await bcrypt.hash(password, 10),
+          temporaryPassword: null,
+          temporaryPasswordExpiry: null,
+        },
+      });
+      return {
+        ...res,
+        temporaryPassword: true,
+      };
     }
     throw new UnauthorizedException('Wrong credentials');
   }
@@ -138,61 +156,26 @@ export class AuthService {
     });
   }
 
-  async sendPasswordRecovery({
-    redirectURL,
-    userEmail,
-  }: {
-    userEmail: string;
-    redirectURL: string;
-  }) {
-    const token = uuidv4();
+  async sendPasswordRecovery({ userEmail }: { userEmail: string }) {
+    // generate a 8 character long temporary password
+    const tempPassword = await uuidv4().slice(0, 8);
 
     try {
-      const { id } = await this.prismaService.user.update({
+      await this.prismaService.user.update({
         where: { email: userEmail },
-        data: { passwordRecoveryToken: token },
+        data: {
+          temporaryPassword: await bcrypt.hash(tempPassword, 10),
+          temporaryPasswordExpiry: new Date(Date.now() + 1000 * 60 * 60 * 24),
+        },
         select: { id: true },
       });
 
-      await this.emailService.sendMail(
-        'Send password recovery link',
-        userEmail,
-        {
-          url: redirectURL + `?id=${id}&token=${token}`,
-        },
-      );
+      await this.emailService.sendMail('Send temporary password', userEmail, {
+        temporaryPassword: tempPassword,
+      });
     } catch (e) {
       // The account does not exist.
       // Do not say anything to the user.
     }
-  }
-
-  async updateMyPasswordByLink({
-    newPassword,
-    token,
-    userID,
-  }: {
-    userID: string;
-    token: string;
-    newPassword: string;
-  }) {
-    const { passwordRecoveryToken } =
-      await this.prismaService.user.findUniqueOrThrow({
-        where: { id: userID },
-        select: { passwordRecoveryToken: true },
-      });
-
-    if (passwordRecoveryToken !== token) {
-      throw new UnauthorizedException(`Invalid token`);
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await this.prismaService.user.update({
-      where: { id: userID },
-      data: {
-        passwordRecoveryToken: null,
-        password: hashedPassword,
-      },
-    });
   }
 }
