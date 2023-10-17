@@ -24,6 +24,12 @@ export class ConversationsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('answered')
+  async getAllAnsweredConversations(@UserDecorator() user: UserEntity) {
+    return this.conversationsService.getAllAnsweredConversations(user);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('id')
   async getConversationById(
     @UserDecorator() user: UserEntity,

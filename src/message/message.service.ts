@@ -135,9 +135,20 @@ export class MessageService {
         throw new NotFoundException('User not in conversation');
     }
 
+    // Find all messages in conversation and set hasAnswer to true
+    await this.prismaService.message.updateMany({
+      where: {
+        conversationId: conversationId,
+      },
+      data: {
+        hasAnswer: true,
+      },
+    });
+
     const createdMessage = await this.prismaService.message.create({
       data: {
         text: message,
+        hasAnswer: foundUser.profession === 'agronomist' ? true : false,
         user: {
           connect: {
             id: user.userId,

@@ -27,6 +27,19 @@ export class CreateUserDto {
   profession: string;
 }
 
+export class UpdateUserEmailDto extends PickType(CreateUserDto, [
+  'email',
+  'password',
+] as const) {
+  @IsEmail()
+  @IsNotEmpty()
+  oldEmail: string;
+
+  @IsEmail()
+  @IsNotEmpty()
+  confirmEmail: string;
+}
+
 export class UserDto extends OmitType(CreateUserDto, ['password'] as const) {
   @IsUUID('4')
   id: string;

@@ -19,9 +19,8 @@ import {
   UpdatePasswordByLinkDto,
   UpdatePasswordDto,
   UserEmailFreeQueryDto,
-  UserIDQueryDto,
 } from './dto/auth.dto';
-import { CreateUserDto } from '../users/dto/users.dto';
+import { CreateUserDto, UpdateUserEmailDto } from '../users/dto/users.dto';
 import { PrismaService } from 'src/prisma.service';
 import { JwtAuthGuard } from 'src/core/guards/jwtAuth.guard';
 
@@ -58,15 +57,14 @@ export class AuthController {
     return this.authService.login(user.userId, res.email, res.profession);
   }
 
-  @Put('register/update')
-  @Public()
+  @Put('/update/email')
   @UseGuards(JwtAuthGuard)
-  async updateUnverifiedAccount(
-    @Query() query: UserIDQueryDto,
-    @Body() payload: CreateUserDto,
+  async updateUserEmail(
+    @UserDecorator() user: UserEntity,
+    @Body() payload: UpdateUserEmailDto,
   ) {
-    const user = await this.authService.updateUser(query.id, payload);
-    return this.authService.login(user.id, user.email, user.profession);
+    const res = await this.authService.updateUserEmail(user.userId, payload);
+    return this.authService.login(res.id, res.email, res.profession);
   }
 
   @Public()

@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common/exceptions';
 import { v4 as uuidv4 } from 'uuid';
 import { EmailService } from '../shared/contact/email.service';
-import { CreateUserDto } from '../users/dto/users.dto';
+import { CreateUserDto, UpdateUserEmailDto } from '../users/dto/users.dto';
 
 @Injectable()
 export class AuthService {
@@ -98,26 +98,37 @@ export class AuthService {
     });
   }
 
-  async updateUser(
+  async updateUserEmail(
     id: string,
-    { email, name, password, profession }: CreateUserDto,
+    { email, confirmEmail, oldEmail, password }: UpdateUserEmailDto,
   ) {
     //Check email availability
     const emailFree = await this.isEmailFree(email, id);
     if (!emailFree) {
       throw new ConflictException(`An user already exists with email ${email}`);
     }
-    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await this.prismaService.user.findUnique({
+      where: { id },
+      select: { password: true, email: true },
+    });
+
+    // check if password is correct
+    if (!(await bcrypt.compare(password, user.password))) {
+      throw new UnauthorizedException('Wrong password');
+    }
+
+    // check if old email is correct
+    if (oldEmail !== user.email) {
+      throw new UnauthorizedException('Wrong email');
+    }
 
     return this.prismaService.user.update({
       where: {
         id,
       },
       data: {
-        email,
-        name,
-        password: hashedPassword,
-        profession,
+        email: confirmEmail,
       },
     });
   }

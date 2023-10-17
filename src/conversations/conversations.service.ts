@@ -22,11 +22,7 @@ export class ConversationsService {
       select: {
         id: true,
         title: true,
-        tags: {
-          select: {
-            name: true,
-          },
-        },
+        tags: true,
         messages: {
           select: {
             id: true,
@@ -121,6 +117,77 @@ export class ConversationsService {
     return conversationsWithAuthor;
   }
 
+  async getAllAnsweredConversations(user: UserEntity) {
+    const foundUser = await this.prismaService.user.findUnique({
+      where: {
+        id: user.userId,
+      },
+      select: {
+        id: true,
+        profession: true,
+      },
+    });
+
+    if (!foundUser) throw new NotFoundException('User not found');
+    if (foundUser.profession !== 'agronomist')
+      throw new UnauthorizedException('User is not an agronomist');
+
+    const conversationsWithoutAuthors =
+      await this.prismaService.conversation.findMany({
+        where: {
+          messages: {
+            every: {
+              hasAnswer: true,
+            },
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          authorId: true,
+          tags: true,
+          messages: {
+            select: {
+              id: true,
+              text: true,
+              createdAt: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          users: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+    const conversationsWithAuthor = await Promise.all(
+      conversationsWithoutAuthors.map(async (conversation) => {
+        const author = await this.prismaService.user.findUnique({
+          where: {
+            id: conversation.authorId,
+          },
+          select: {
+            name: true,
+          },
+        });
+        return {
+          ...conversation,
+          author,
+        };
+      }),
+    );
+
+    return conversationsWithAuthor;
+  }
+
   async getConversationById(user: UserEntity, id: string) {
     const foundConversation = await this.prismaService.conversation.findUnique({
       where: {
@@ -143,7 +210,7 @@ export class ConversationsService {
             },
           },
           orderBy: {
-            createdAt: 'asc',
+            createdAt: 'desc',
           },
         },
         users: {
@@ -177,7 +244,6 @@ export class ConversationsService {
         throw new UnauthorizedException('User is not in conversation');
     }
 
-    console.log('fourndConversation', foundConversation);
     return foundConversation;
   }
 }
